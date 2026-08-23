@@ -189,7 +189,7 @@ export default function Dashboard() {
       <NewListingModal
         open={showNewListing}
         onClose={() => setShowNewListing(false)}
-        onSubmit={(input) => addListing(profile?.id ?? 'demo-agent', input)}
+        onSubmit={(input, files) => addListing(profile?.id ?? 'demo-agent', input, files)}
       />
     </main>
   )

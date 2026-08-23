@@ -42,7 +42,7 @@ export interface NewListingInput {
 interface UseAgentDashboardResult {
   loading: boolean
   data: DashboardData
-  addListing: (profileId: string, input: NewListingInput) => Promise<boolean>
+  addListing: (profileId: string, input: NewListingInput, files?: File[]) => Promise<boolean>
   addLead: (profileId: string, leadName: string, leadPhone: string) => Promise<boolean>
 }
 
@@ -133,7 +133,7 @@ export function useAgentDashboard(): UseAgentDashboardResult {
   const [data, setData] = useState<DashboardData>(DEMO_DASHBOARD_DATA)
   const [loading, setLoading] = useState(() => Boolean(supabase))
 
-  async function addListing(profileId: string, input: NewListingInput): Promise<boolean> {
+  async function addListing(profileId: string, input: NewListingInput, files: File[] = []): Promise<boolean> {
     if (!supabase) {
       setData((prev) => ({
         ...prev,
@@ -143,12 +143,31 @@ export function useAgentDashboard(): UseAgentDashboardResult {
       return true
     }
 
-    const { error } = await supabase.from('properties').insert({
-      agent_id: profileId,
-      status: 'published',
-      ...input
-    })
-    if (error) return false
+    const { data: created, error } = await supabase
+      .from('properties')
+      .insert({ agent_id: profileId, status: 'published', ...input })
+      .select('id')
+      .single()
+    if (error || !created) return false
+
+    const uploadedUrls: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const ext = files[i].name.split('.').pop() ?? 'jpg'
+      const path = `${profileId}/${created.id}/${i}-${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('listing-images')
+        .upload(path, files[i], { cacheControl: '3600', upsert: false })
+      if (uploadError) continue
+      const { data: publicUrl } = supabase.storage.from('listing-images').getPublicUrl(path)
+      if (publicUrl?.publicUrl) uploadedUrls.push(publicUrl.publicUrl)
+    }
+
+    if (uploadedUrls.length > 0) {
+      await supabase
+        .from('properties')
+        .update({ images: [...input.images, ...uploadedUrls] })
+        .eq('id', created.id)
+    }
 
     setData((prev) => ({
       ...prev,

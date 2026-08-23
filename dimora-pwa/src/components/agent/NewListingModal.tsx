@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { isSupabaseConfigured } from '@/lib/supabaseClient'
 import type { NewListingInput } from '@/hooks/useAgentDashboard'
 
 const PROPERTY_TYPES = ['apartment', 'house', 'bedsitter', 'townhouse', 'commercial', 'land'] as const
@@ -9,7 +10,7 @@ const PROPERTY_TYPES = ['apartment', 'house', 'bedsitter', 'townhouse', 'commerc
 interface NewListingModalProps {
   open: boolean
   onClose: () => void
-  onSubmit: (input: NewListingInput) => Promise<boolean>
+  onSubmit: (input: NewListingInput, files: File[]) => Promise<boolean>
 }
 
 interface FormState {
@@ -52,6 +53,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function NewListingModal({ open, onClose, onSubmit }: NewListingModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,27 +74,39 @@ export function NewListingModal({ open, onClose, onSubmit }: NewListingModalProp
       setError('Enter a valid price in KES.')
       return
     }
+    if (files.length > 0 && !isSupabaseConfigured) {
+      setError('Photo uploads need the live backend — paste image URLs instead for now.')
+      return
+    }
+    if (files.length > 10) {
+      setError('Maximum 10 photos per listing.')
+      return
+    }
 
     setBusy(true)
-    const ok = await onSubmit({
-      title: form.title.trim(),
-      description: form.description.trim(),
-      price,
-      type: form.type,
-      county: form.county.trim(),
-      sub_county: form.sub_county.trim(),
-      neighborhood: form.neighborhood.trim(),
-      bedrooms: Number(form.bedrooms) || 0,
-      bathrooms: Number(form.bathrooms) || 0,
-      images: form.imagesText
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-    })
+    const ok = await onSubmit(
+      {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price,
+        type: form.type,
+        county: form.county.trim(),
+        sub_county: form.sub_county.trim(),
+        neighborhood: form.neighborhood.trim(),
+        bedrooms: Number(form.bedrooms) || 0,
+        bathrooms: Number(form.bathrooms) || 0,
+        images: form.imagesText
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+      },
+      files
+    )
     setBusy(false)
 
     if (ok) {
       setForm(EMPTY_FORM)
+      setFiles([])
       onClose()
     } else {
       setError('Could not save the listing. Try again.')
@@ -201,14 +215,36 @@ export function NewListingModal({ open, onClose, onSubmit }: NewListingModalProp
           />
         </Field>
 
-        <Field label="Image URLs (one per line)">
+        <Field label="Photos">
+          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-limewash/50 px-3 py-4 text-sm font-medium text-neutral-600 transition-colors hover:border-terracotta hover:text-terracotta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <circle cx="9" cy="10" r="1.6" />
+              <path strokeLinecap="round" d="m5 17 4.5-5 3.5 3.5L16 12l3 5" />
+            </svg>
+            {files.length > 0 ? `${files.length} photo${files.length === 1 ? '' : 's'} selected` : 'Take photo or choose from gallery'}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                setFiles(Array.from(e.target.files ?? []))
+                e.target.value = ''
+              }}
+            />
+          </label>
+        </Field>
+
+        <details className="rounded-xl bg-limewash/40 px-3 py-2">
+          <summary className="cursor-pointer text-xs font-medium text-neutral-500">…or paste image URLs</summary>
           <textarea
-            className={`${inputClass} min-h-[56px] resize-y font-mono text-xs`}
+            className={`${inputClass} mt-2 min-h-[56px] resize-y font-mono text-xs`}
             value={form.imagesText}
             onChange={(e) => update('imagesText', e.target.value)}
             placeholder="https://images.pexels.com/..."
           />
-        </Field>
+        </details>
 
         {error && (
           <p role="alert" className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">
