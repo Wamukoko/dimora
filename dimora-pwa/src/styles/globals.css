@@ -5,10 +5,13 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     @apply bg-limewash text-ink font-sans antialiased;
+    overscroll-behavior-y: none;
   }
 
   :focus-visible {
