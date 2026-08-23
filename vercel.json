@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd dimora-pwa && npm ci",
+  "buildCommand": "cd dimora-pwa && npm run build",
+  "outputDirectory": "dimora-pwa/dist",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
