@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useProperties } from '@/hooks/useProperties'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { PropertyCard } from '@/components/property/PropertyCard'
 
 export default function Home() {
+  usePageTitle('Find verified homes')
   const { properties, loading, source } = useProperties(6)
 
   return (

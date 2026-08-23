@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useProperties } from '@/hooks/useProperties'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { PropertyCard } from '@/components/property/PropertyCard'
 
 const propertyTypes = ['apartment', 'house', 'bedsitter', 'townhouse', 'commercial', 'land'] as const
 
 export default function Search() {
+  usePageTitle('Search')
   const { properties, loading, source } = useProperties(50)
   const [query, setQuery] = useState('')
   const [type, setType] = useState<string | null>(null)

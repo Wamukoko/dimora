@@ -12,6 +12,7 @@ import { VerifiedBadge } from '@/components/property/VerifiedBadge'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { useStkPush } from '@/hooks/useStkPush'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 type BookingState = 'idle' | 'submitting' | 'pay' | 'awaiting_pin' | 'confirmed' | 'queued' | 'error'
 
@@ -138,6 +139,8 @@ export default function PropertyDetail() {
   const [copied, setCopied] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+
+  usePageTitle(property?.title ?? 'Listing')
 
   useEffect(() => {
     let cancelled = false

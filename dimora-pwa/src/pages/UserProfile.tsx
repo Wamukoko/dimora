@@ -5,6 +5,7 @@ import { useEscrowRelease } from '@/hooks/useEscrowRelease'
 import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/Button'
 import { ReviewModal } from '@/components/review/ReviewModal'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 const roleChipStyles: Record<string, string> = {
   hunter: 'bg-white text-ink border border-line',
@@ -52,11 +53,29 @@ function formatViewingDate(iso: string): string {
 }
 
 export default function UserProfile() {
+  usePageTitle('Your profile')
   const { profile, signOut } = useAuth()
   const { releaseDeposit, busy, error: escrowError } = useEscrowRelease()
   const [viewings, setViewings] = useState<ViewingRow[]>([])
   const [viewingsLoading, setViewingsLoading] = useState(true)
   const [reviewTarget, setReviewTarget] = useState<ViewingRow | null>(null)
+  const [phoneOverride, setPhoneOverride] = useState<string | null>(null)
+  const [editingPhone, setEditingPhone] = useState(false)
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [phoneBusy, setPhoneBusy] = useState(false)
+
+  const displayedPhone = phoneOverride ?? profile?.phone_number ?? null
+
+  async function savePhone() {
+    if (!profile) return
+    setPhoneBusy(true)
+    if (supabase) {
+      await supabase.from('profiles').update({ phone_number: phoneDraft.trim() }).eq('id', profile.id)
+    }
+    setPhoneOverride(phoneDraft.trim())
+    setPhoneBusy(false)
+    setEditingPhone(false)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -168,8 +187,38 @@ export default function UserProfile() {
             </div>
             <div className="flex items-center justify-between">
               <dt className="text-neutral-500">Phone</dt>
-              <dd className={profile.phone_number ? '' : 'italic text-neutral-400'}>
-                {profile.phone_number ?? 'Not set'}
+              <dd className={displayedPhone ? '' : 'italic text-neutral-400'}>
+                {editingPhone ? (
+                  <span className="flex items-center gap-2">
+                    <input
+                      value={phoneDraft}
+                      onChange={(e) => setPhoneDraft(e.target.value)}
+                      placeholder="+254 7XX XXX XXX"
+                      inputMode="tel"
+                      autoFocus
+                      className="w-40 rounded-lg border border-line px-2.5 py-1.5 text-sm focus:border-terracotta focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={phoneBusy || !phoneDraft.trim()}
+                      onClick={() => void savePhone()}
+                      className="rounded-lg bg-terracotta px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {phoneBusy ? '…' : 'Save'}
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhoneDraft(displayedPhone ?? '')
+                      setEditingPhone(true)
+                    }}
+                    className="underline decoration-line underline-offset-4 transition-colors hover:text-terracotta"
+                  >
+                    {displayedPhone ?? 'Not set — add for M-PESA'} ✎
+                  </button>
+                )}
               </dd>
             </div>
           </dl>

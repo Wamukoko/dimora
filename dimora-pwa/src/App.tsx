@@ -5,6 +5,7 @@ import { HeaderBar } from '@/components/layout/HeaderBar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { Protected } from '@/components/routing/Protected'
 import { ConnectivityBanner } from '@/components/layout/ConnectivityBanner'
+import { ErrorBoundary } from '@/components/routing/ErrorBoundary'
 import Home from '@/pages/Home'
 import Search from '@/pages/Search'
 import Login from '@/pages/Login'
@@ -35,6 +36,7 @@ function AgentChrome({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ErrorBoundary>
       <ScrollToTop />
       <ConnectivityBanner />
       <Routes>
@@ -89,6 +91,7 @@ export default function App() {
         />
         <Route path="*" element={<HunterShell />} />
       </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }
