@@ -61,6 +61,10 @@ export default function Login() {
                 placeholder="you@example.com"
                 className="w-full rounded-xl border border-line bg-limewash/40 px-4 py-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-terracotta"
               />
+              <p className="mt-1.5 text-xs leading-relaxed text-neutral-400">
+                New here? This <strong className="font-medium text-neutral-500">creates your account</strong> — no
+                password, we just email you a secure link.
+              </p>
             </div>
 
             {error && (
