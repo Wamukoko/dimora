@@ -352,6 +352,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     IF NEW.role IS DISTINCT FROM OLD.role
+       AND current_setting('request.jwt.claims', true) IS NOT NULL
        AND COALESCE(current_setting('request.jwt.claims', true)::json ->> 'role', '') <> 'service_role' THEN
         RAISE EXCEPTION 'Role changes are not permitted via client updates.';
     END IF;
