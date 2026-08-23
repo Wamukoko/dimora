@@ -155,10 +155,10 @@ export function useAgentDashboard(): UseAgentDashboardResult {
       const ext = files[i].name.split('.').pop() ?? 'jpg'
       const path = `${profileId}/${created.id}/${i}-${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
-        .from('listing-images')
+        .from('property-images')
         .upload(path, files[i], { cacheControl: '3600', upsert: false })
       if (uploadError) continue
-      const { data: publicUrl } = supabase.storage.from('listing-images').getPublicUrl(path)
+      const { data: publicUrl } = supabase.storage.from('property-images').getPublicUrl(path)
       if (publicUrl?.publicUrl) uploadedUrls.push(publicUrl.publicUrl)
     }
 

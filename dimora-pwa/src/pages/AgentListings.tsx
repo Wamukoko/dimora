@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAgentListings } from '@/hooks/useAgentListings'
 import { VerifiedBadge } from '@/components/property/VerifiedBadge'
@@ -9,6 +9,7 @@ function formatKes(amount: number): string {
 
 export default function AgentListings() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const { rows, loading, error, togglePublished } = useAgentListings(profile?.id)
 
   return (
@@ -81,9 +82,13 @@ export default function AgentListings() {
                 >
                   {row.isPublished ? 'Live' : 'Paused'}
                 </button>
-                <span className="text-[10px] text-white/40">
-                  {row.isPublished ? 'Tap to pause' : 'Tap to resume'}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/dashboard/listings/${row.id}/verify`)}
+                  className="text-[10px] font-medium text-white/50 underline underline-offset-2 transition-colors hover:text-white"
+                >
+                  Verifications →
+                </button>
               </div>
             </li>
           ))}

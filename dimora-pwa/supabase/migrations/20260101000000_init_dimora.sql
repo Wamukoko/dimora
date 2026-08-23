@@ -275,7 +275,9 @@ DECLARE
 BEGIN
     SELECT COUNT(DISTINCT kind) INTO present_count
     FROM public.property_verifications
-    WHERE property_id = NEW.property_id AND kind = ANY(required_kinds);
+    WHERE property_id = NEW.property_id
+      AND kind = ANY(required_kinds)
+      AND verified_by IS NOT NULL;
 
     UPDATE public.properties
     SET is_verified = (present_count = array_length(required_kinds, 1))
@@ -394,12 +396,49 @@ CREATE POLICY "Agents can update own properties"
 
 -- PROPERTY VERIFICATIONS
 CREATE POLICY "Only admins can read full verification records"
-    ON public.property_verifications FOR SELECT USING (public.get_auth_role() = 'admin');
+    ON public.property_verifications FOR SELECT USING (
+        public.get_auth_role() = 'admin'
+        OR EXISTS (
+            SELECT 1 FROM public.properties
+            WHERE properties.id = property_verifications.property_id
+              AND properties.agent_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Agents submit evidence for their own listings"
+    ON public.property_verifications FOR INSERT WITH CHECK (
+        verified_by IS NULL
+        AND evidence_url IS NOT NULL
+        AND evidence_hash IS NOT NULL
+        AND EXISTS (
+            SELECT 1 FROM public.properties
+            WHERE properties.id = property_verifications.property_id
+              AND properties.agent_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Owners update pending submissions, admins approve"
+    ON public.property_verifications FOR UPDATE USING (
+        public.get_auth_role() = 'admin'
+        OR (
+            verified_by IS NULL
+            AND EXISTS (
+                SELECT 1 FROM public.properties
+                WHERE properties.id = property_verifications.property_id
+                  AND properties.agent_id = auth.uid()
+            )
+        )
+    )
+    WITH CHECK (
+        public.get_auth_role() = 'admin'
+        OR verified_by IS NULL
+    );
 CREATE POLICY "Only admins can write verifications"
     ON public.property_verifications FOR INSERT WITH CHECK (public.get_auth_role() = 'admin');
 
 CREATE VIEW public.public_property_verifications AS
-    SELECT property_id, kind, created_at FROM public.property_verifications;
+    SELECT property_id, kind, created_at FROM public.property_verifications
+    WHERE verified_by IS NOT NULL;
 
 -- BOOKINGS
 CREATE POLICY "Hunters and Agents can view relevant bookings"
@@ -496,6 +535,10 @@ CREATE POLICY "Agents upload to their own prefix"
         bucket_id = 'property-images'
         AND (storage.foldername(name))[1] = auth.uid()::text
     );
+
+CREATE POLICY "Owners replace their own uploads"
+    ON storage.objects FOR UPDATE TO authenticated
+    USING ((storage.foldername(name))[1] = auth.uid()::text);
 
 CREATE POLICY "Public read for listing images"
     ON storage.objects FOR SELECT USING (bucket_id = 'property-images');
