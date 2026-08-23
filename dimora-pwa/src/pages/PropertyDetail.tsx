@@ -22,6 +22,58 @@ interface PropertyReview {
   name: string
 }
 
+interface NeighborhoodSignal {
+  signalType: string
+  rating: number | null
+  comment: string | null
+}
+
+const CITIES = [
+  { name: 'Nairobi CBD', lat: -1.286389, lng: 36.817223 },
+  { name: 'Kisumu CBD', lat: -0.091702, lng: 34.767956 },
+  { name: 'Mombasa CBD', lat: -4.043471, lng: 39.668206 }
+]
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function commuteSummary(lat?: number | null, lng?: number | null): string | null {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) return null
+  const nearest = CITIES.map((city) => ({ ...city, km: haversineKm(lat, lng, city.lat, city.lng) })).sort(
+    (a, b) => a.km - b.km
+  )[0]
+  const minutes = Math.round((nearest.km / 25) * 60) + 10
+  return `${nearest.km.toFixed(1)} km to ${nearest.name} · ~${minutes} min by matatu`
+}
+
+const DEMO_SIGNALS: Record<string, NeighborhoodSignal[]> = {
+  'demo-kilimani': [
+    { signalType: 'safety', rating: 4, comment: 'Active nyumba kumi initiative on this street' },
+    { signalType: 'transit', rating: 5, comment: 'Matatus and BRT stop two minutes away' },
+    { signalType: 'water', rating: 3, comment: 'Occasional rationing in the dry season' }
+  ],
+  'demo-karen': [
+    { signalType: 'safety', rating: 5, comment: 'Very quiet, regular police patrols' },
+    { signalType: 'transit', rating: 2, comment: 'Own transport recommended' }
+  ],
+  'demo-kileleshwa': [
+    { signalType: 'safety', rating: 4, comment: null },
+    { signalType: 'water', rating: 5, comment: 'Reliable supply year-round' }
+  ],
+  'demo-milimani': [
+    { signalType: 'safety', rating: 4, comment: 'Upmarket residential estate' },
+    { signalType: 'transit', rating: 3, comment: 'Tuk tuks reach town in about 10 minutes' },
+    { signalType: 'water', rating: 2, comment: 'Municipal supply is intermittent; borehole common' }
+  ]
+}
+
 const DEMO_REVIEWS: Record<string, PropertyReview[]> = {
   'demo-kilimani': [
     {
@@ -82,9 +134,45 @@ export default function PropertyDetail() {
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [reviews, setReviews] = useState<PropertyReview[]>([])
+  const [signals, setSignals] = useState<NeighborhoodSignal[]>([])
   const [copied, setCopied] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadSignals() {
+      if (!property) return
+
+      if (!supabase || fromCache || !property.agent_id) {
+        setSignals(DEMO_SIGNALS[property.id] ?? [])
+        return
+      }
+
+      const { data } = await supabase
+        .from('neighborhood_signals')
+        .select('signal_type, rating, comment')
+        .eq('county', property.county)
+        .eq('neighborhood', property.neighborhood)
+        .order('created_at', { ascending: false })
+        .limit(8)
+      if (!cancelled) {
+        setSignals(
+          (data ?? []).map((row) => ({
+            signalType: row.signal_type,
+            rating: row.rating,
+            comment: row.comment
+          }))
+        )
+      }
+    }
+
+    void loadSignals()
+    return () => {
+      cancelled = true
+    }
+  }, [property?.id, property?.county, property?.neighborhood, fromCache, property?.agent_id])
 
   useEffect(() => {
     let cancelled = false
@@ -410,6 +498,42 @@ export default function PropertyDetail() {
               <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">{property.description}</p>
             </section>
           )}
+
+          <section aria-label="Neighbourhood">
+            <h2 className="font-display text-lg font-semibold">The neighbourhood</h2>
+            {(property.latitude ?? null) !== null && (property.longitude ?? null) !== null && (
+              <p className="mt-1.5 inline-flex items-center gap-2 rounded-full bg-limewash px-3 py-1.5 text-xs font-medium text-ink">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5 text-terracotta">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7 3 10v4l5 3m8-10 5 3v4l-5 3M9 12h6" />
+                </svg>
+                {commuteSummary(property.latitude, property.longitude)}
+              </p>
+            )}
+            {signals.length > 0 ? (
+              <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-white">
+                {signals.map((signal, index) => (
+                  <li key={index} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium capitalize">{signal.signalType}</p>
+                      {signal.comment && (
+                        <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">{signal.comment}</p>
+                      )}
+                    </div>
+                    {signal.rating !== null && signal.rating !== undefined && (
+                      <span className="shrink-0 text-xs font-semibold text-amber-500">
+                        {'★'.repeat(signal.rating)}
+                        <span className="text-neutral-300">{'★'.repeat(5 - signal.rating)}</span>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-xs text-neutral-500">
+                No community signals for this area yet — be the first to share after your viewing.
+              </p>
+            )}
+          </section>
 
           <section aria-label="Share">
             <h2 className="font-display text-lg font-semibold">Share this home</h2>

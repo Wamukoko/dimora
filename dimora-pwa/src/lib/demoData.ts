@@ -27,7 +27,9 @@ export const DEMO_PROPERTIES: Property[] = [
     neighborhood: 'Kilimani',
     images: [px('271624'), px('1571460')],
     is_published: true,
-    is_verified: true
+    is_verified: true,
+    latitude: -1.2921,
+    longitude: 36.7818
   },
   {
     id: 'demo-karen',
@@ -43,7 +45,9 @@ export const DEMO_PROPERTIES: Property[] = [
     neighborhood: 'Karen',
     images: [px('106399'), px('1396122')],
     is_published: true,
-    is_verified: true
+    is_verified: true,
+    latitude: -1.3197,
+    longitude: 36.7076
   },
   {
     id: 'demo-kileleshwa',
@@ -59,7 +63,9 @@ export const DEMO_PROPERTIES: Property[] = [
     neighborhood: 'Kileleshwa',
     images: [px('210617'), px('1571459')],
     is_published: true,
-    is_verified: false
+    is_verified: false,
+    latitude: -1.2794,
+    longitude: 36.7761
   },
   {
     id: 'demo-milimani',
@@ -75,6 +81,9 @@ export const DEMO_PROPERTIES: Property[] = [
     neighborhood: 'Milimani',
     images: [px('186077'), px('323780')],
     is_published: true,
-    is_verified: false
+    is_verified: false,
+    latitude: -0.1021,
+    longitude: 34.7516
   }
 ]
+

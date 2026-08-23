@@ -17,6 +17,8 @@ export interface Property {
   images: string[]
   is_published: boolean
   is_verified: boolean
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export interface PublicProfile {
