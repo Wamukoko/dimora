@@ -11,6 +11,7 @@ import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import UserProfile from '@/pages/UserProfile'
 import PropertyDetail from '@/pages/PropertyDetail'
+import AgentListings from '@/pages/AgentListings'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -42,6 +43,16 @@ export default function App() {
             <Protected>
               <AgentChrome>
                 <Dashboard />
+              </AgentChrome>
+            </Protected>
+          }
+        />
+        <Route
+          path="/dashboard/listings"
+          element={
+            <Protected>
+              <AgentChrome>
+                <AgentListings />
               </AgentChrome>
             </Protected>
           }

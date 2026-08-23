@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAgentDashboard } from '@/hooks/useAgentDashboard'
 import { NewListingModal } from '@/components/agent/NewListingModal'
@@ -77,13 +78,21 @@ export default function Dashboard() {
           </h1>
           <p className="mt-1 text-sm text-white/60">Here's your pipeline today.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowNewListing(true)}
-          className="shrink-0 rounded-xl bg-terracotta px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-terracotta-hover"
-        >
-          + Add listing
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <Link
+            to="/dashboard/listings"
+            className="shrink-0 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-white/40 hover:text-white"
+          >
+            My listings
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowNewListing(true)}
+            className="shrink-0 rounded-xl bg-terracotta px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-terracotta-hover"
+          >
+            + Add listing
+          </button>
+        </div>
       </div>
 
       <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Key stats">

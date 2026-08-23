@@ -23,7 +23,7 @@ async function dispatchAction(supabaseClient: NonNullable<typeof supabase>, item
         .from('properties')
         .select('id')
         .eq('id', property_id)
-        .eq('status', 'published')
+        .eq('is_published', true)
         .maybeSingle()
       if (!property) throw new Error('Property is no longer available')
 

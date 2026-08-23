@@ -145,7 +145,7 @@ export function useAgentDashboard(): UseAgentDashboardResult {
 
     const { data: created, error } = await supabase
       .from('properties')
-      .insert({ agent_id: profileId, status: 'published', ...input })
+      .insert({ agent_id: profileId, ...input })
       .select('id')
       .single()
     if (error || !created) return false
@@ -217,7 +217,7 @@ export function useAgentDashboard(): UseAgentDashboardResult {
       }
 
       const [listingsRes, itemsRes, bookingsRes] = await Promise.all([
-        supabase.from('properties').select('id,status'),
+        supabase.from('properties').select('id,is_published'),
         supabase
           .from('agent_workspace_items')
           .select('id,title,lead_name,lead_phone,lead_source,stage,due_date')
@@ -235,7 +235,7 @@ export function useAgentDashboard(): UseAgentDashboardResult {
       const rows = bookingsRes.data ?? []
       setData({
         totalListings: listingsRes.data?.length ?? 0,
-        activeListings: listingsRes.data?.filter((p) => p.status === 'published').length ?? 0,
+        activeListings: listingsRes.data?.filter((p) => p.is_published).length ?? 0,
         items: (itemsRes.data ?? []).map((item) => ({
           id: item.id,
           title: item.title,
