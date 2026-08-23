@@ -82,6 +82,9 @@ export default function PropertyDetail() {
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [reviews, setReviews] = useState<PropertyReview[]>([])
+  const [copied, setCopied] = useState(false)
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   useEffect(() => {
     let cancelled = false
@@ -407,6 +410,36 @@ export default function PropertyDetail() {
               <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">{property.description}</p>
             </section>
           )}
+
+          <section aria-label="Share">
+            <h2 className="font-display text-lg font-semibold">Share this home</h2>
+            <div className="mt-2 flex gap-2">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `Dimora: ${property.title} — KES ${property.price.toLocaleString('en-KE')}/month in ${property.neighborhood}. Take a look: ${shareUrl}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path d="M12.04 2a9.9 9.9 0 0 0-8.57 14.87L2 22l5.27-1.38A9.9 9.9 0 1 0 12.04 2Zm0 18.06a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.12.82.83-3.04-.2-.31a8.16 8.16 0 1 1 6.92 3.84Zm4.48-6.11c-.25-.13-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.97-.15.17-.29.19-.53.06-.25-.12-1.05-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.44.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.44.06-.66.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.56c.13.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.6.19 1.14.16 1.57.1.48-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" />
+                </svg>
+                WhatsApp
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(shareUrl)
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 1800)
+                }}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:border-terracotta"
+              >
+                {copied ? 'Link copied ✓' : 'Copy link'}
+              </button>
+            </div>
+          </section>
 
           {agent && (
             <section aria-label="Listed by" className="rounded-xl border border-line bg-white p-4">

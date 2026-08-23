@@ -89,6 +89,16 @@ export default function AgentListings() {
                 >
                   Verifications →
                 </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `Hi! Are you still interested in ${row.title} (${formatKes(row.price)}/month, ${row.neighborhood})? I can arrange a viewing — Amina via Dimora. ${window.location.origin}/property/${row.id}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-medium text-emerald-300/80 underline underline-offset-2 transition-colors hover:text-emerald-200"
+                >
+                  WhatsApp lead →
+                </a>
               </div>
             </li>
           ))}
