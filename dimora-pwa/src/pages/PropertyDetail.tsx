@@ -15,6 +15,38 @@ import { useStkPush } from '@/hooks/useStkPush'
 
 type BookingState = 'idle' | 'submitting' | 'pay' | 'awaiting_pin' | 'confirmed' | 'queued' | 'error'
 
+interface PropertyReview {
+  rating: number
+  comment: string | null
+  createdAt: string
+  name: string
+}
+
+const DEMO_REVIEWS: Record<string, PropertyReview[]> = {
+  'demo-kilimani': [
+    {
+      rating: 5,
+      comment: 'Amina showed up exactly on time and the apartment matches every photo. Borehole water is a huge plus.',
+      createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+      name: 'Brian O.'
+    },
+    {
+      rating: 4,
+      comment: 'Great light and secure parking. Slightly noisy on Ngong Road side during rush hour.',
+      createdAt: new Date(Date.now() - 19 * 86400000).toISOString(),
+      name: 'Faith K.'
+    }
+  ],
+  'demo-milimani': [
+    {
+      rating: 5,
+      comment: 'Spacious compound, genuine title deed shown on the spot. Worth the trip to Kisumu.',
+      createdAt: new Date(Date.now() - 9 * 86400000).toISOString(),
+      name: 'Otieno D.'
+    }
+  ]
+}
+
 function BackButton() {
   const navigate = useNavigate()
   return (
@@ -47,6 +79,100 @@ export default function PropertyDetail() {
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [payPhone, setPayPhone] = useState('')
   const { state: stkState, error: stkError, initiateStkPush } = useStkPush()
+
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [reviews, setReviews] = useState<PropertyReview[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadReviews() {
+      if (!property) return
+
+      if (!supabase || fromCache || !property.agent_id) {
+        setReviews(DEMO_REVIEWS[property.id] ?? [])
+        return
+      }
+
+      const { data } = await supabase
+        .from('reviews')
+        .select('rating, comment, created_at, hunter_id')
+        .eq('property_id', property.id)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (cancelled || !data) return
+
+      const hunterIds = [...new Set(data.map((review) => review.hunter_id))]
+      const names = new Map<string, string>()
+      if (hunterIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('public_profiles')
+          .select('id, full_name')
+          .in('id', hunterIds)
+        profiles?.forEach((p) => names.set(p.id, p.full_name ?? 'Hunter'))
+      }
+
+      if (!cancelled) {
+        setReviews(
+          data.map((review) => ({
+            rating: review.rating,
+            comment: review.comment,
+            createdAt: review.created_at,
+            name: names.get(review.hunter_id) ?? 'Hunter'
+          }))
+        )
+      }
+    }
+
+    void loadReviews()
+    return () => {
+      cancelled = true
+    }
+  }, [property?.id, property?.agent_id, fromCache])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadFavorite() {
+      if (!supabase || !session?.user || !id) {
+        setIsFavorite(false)
+        return
+      }
+      const { data } = await supabase
+        .from('favorites')
+        .select('property_id')
+        .eq('hunter_id', session.user.id)
+        .eq('property_id', id)
+        .maybeSingle()
+      if (!cancelled) setIsFavorite(Boolean(data))
+    }
+
+    void loadFavorite()
+    return () => {
+      cancelled = true
+    }
+  }, [id, session?.user?.id])
+
+  async function toggleFavorite() {
+    if (!property) return
+    const next = !isFavorite
+
+    if (!supabase || !session?.user) {
+      setIsFavorite(next)
+      return
+    }
+
+    setIsFavorite(next)
+    const userId = session.user.id
+    const { error } = next
+      ? await supabase.from('favorites').insert({ hunter_id: userId, property_id: property.id })
+      : await supabase
+          .from('favorites')
+          .delete()
+          .eq('hunter_id', userId)
+          .eq('property_id', property.id)
+    if (error) setIsFavorite(!next)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -215,10 +341,25 @@ export default function PropertyDetail() {
       <main className="mx-auto max-w-hunter px-4 pb-32">
         <div className="relative">
           <BackButton />
-          <div className="aspect-[16/11] overflow-hidden rounded-2xl bg-gradient-to-br from-limewash to-line/60">
+          <div className="relative aspect-[16/11] overflow-hidden rounded-2xl bg-gradient-to-br from-limewash to-line/60">
             {image && (
               <img src={image} alt={property.title} className="h-full w-full object-cover" loading="eager" decoding="async" />
             )}
+            <button
+              type="button"
+              onClick={() => void toggleFavorite()}
+              aria-label={isFavorite ? 'Remove from saved homes' : 'Save this home'}
+              aria-pressed={isFavorite}
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-transform hover:scale-105"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className={`h-5 w-5 transition-colors ${isFavorite ? 'fill-terracotta stroke-terracotta' : 'fill-none stroke-neutral-600'}`}
+                strokeWidth="1.8"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.5s-7.5-4.7-9.3-9A5.4 5.4 0 0 1 12 6.6a5.4 5.4 0 0 1 9.3 4.9c-1.8 4.3-9.3 9-9.3 9Z" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -278,6 +419,42 @@ export default function PropertyDetail() {
                   <p className="text-xs text-neutral-500">Listing agent</p>
                 </div>
               </div>
+            </section>
+          )}
+
+          {reviews.length > 0 && (
+            <section aria-label="Reviews">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-semibold">What hunters say</h2>
+                <span className="rounded-full bg-limewash px-2.5 py-1 text-xs font-semibold text-ink">
+                  ★ {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)}
+                  <span className="ml-1 font-normal text-neutral-500">· {reviews.length} review{reviews.length === 1 ? '' : 's'}</span>
+                </span>
+              </div>
+              <ul className="mt-3 space-y-3">
+                {reviews.map((review, index) => (
+                  <li key={index} className="rounded-xl border border-line bg-white p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-agent text-xs font-semibold text-white">
+                          {review.name[0]?.toUpperCase()}
+                        </span>
+                        <p className="text-sm font-medium">{review.name}</p>
+                      </div>
+                      <span className="text-sm text-amber-500" aria-label={`${review.rating} out of 5 stars`}>
+                        {'★'.repeat(review.rating)}
+                        <span className="text-neutral-300">{'★'.repeat(5 - review.rating)}</span>
+                      </span>
+                    </div>
+                    {review.comment && (
+                      <p className="mt-2 text-sm leading-relaxed text-neutral-700">{review.comment}</p>
+                    )}
+                    <p className="mt-1.5 text-[11px] text-neutral-400">
+                      {new Date(review.createdAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 
