@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useEscrowRelease } from '@/hooks/useEscrowRelease'
 import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/Button'
+import { ReviewModal } from '@/components/review/ReviewModal'
 
 const roleChipStyles: Record<string, string> = {
   hunter: 'bg-white text-ink border border-line',
@@ -13,15 +14,18 @@ const roleChipStyles: Record<string, string> = {
 
 interface ViewingRow {
   id: string
+  propertyId: string
   propertyTitle: string
   scheduledAt: string
   status: string
   hunterConfirmedViewing: boolean
+  myRating?: number
 }
 
 const DEMO_VIEWINGS: ViewingRow[] = [
   {
     id: 'demo-booking-1',
+    propertyId: 'demo-kilimani',
     propertyTitle: 'Sunlit 2-Bedroom in Kilimani',
     scheduledAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
     status: 'confirmed',
@@ -29,6 +33,7 @@ const DEMO_VIEWINGS: ViewingRow[] = [
   },
   {
     id: 'demo-booking-2',
+    propertyId: 'demo-milimani',
     propertyTitle: 'Modern 4-Bed Villa, Milimani Kisumu',
     scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
     status: 'confirmed',
@@ -51,6 +56,7 @@ export default function UserProfile() {
   const { releaseDeposit, busy, error: escrowError } = useEscrowRelease()
   const [viewings, setViewings] = useState<ViewingRow[]>([])
   const [viewingsLoading, setViewingsLoading] = useState(true)
+  const [reviewTarget, setReviewTarget] = useState<ViewingRow | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -64,15 +70,17 @@ export default function UserProfile() {
 
       const { data } = await supabase
         .from('bookings')
-        .select('id, scheduled_at, status, hunter_confirmed_viewing, properties(title)')
+        .select('id, property_id, scheduled_at, status, hunter_confirmed_viewing, properties(title)')
         .eq('hunter_id', profile.id)
         .order('scheduled_at', { ascending: true })
         .limit(10)
 
       if (cancelled) return
+      const rows = data ?? []
       setViewings(
-        (data ?? []).map((row) => ({
+        rows.map((row) => ({
           id: row.id,
+          propertyId: row.property_id,
           propertyTitle:
             (row.properties as { title?: string } | null)?.title ?? 'Property viewing',
           scheduledAt: row.scheduled_at,
@@ -81,6 +89,21 @@ export default function UserProfile() {
         }))
       )
       setViewingsLoading(false)
+
+      const bookingIds = rows.map((row) => row.id)
+      if (bookingIds.length > 0) {
+        const { data: reviews } = await supabase
+          .from('reviews')
+          .select('booking_id, rating')
+          .in('booking_id', bookingIds)
+        if (cancelled || !reviews) return
+        setViewings((prev) =>
+          prev.map((viewing) => {
+            const hit = reviews.find((review) => review.booking_id === viewing.id)
+            return hit ? { ...viewing, myRating: hit.rating } : viewing
+          })
+        )
+      }
     }
 
     void loadViewings()
@@ -96,6 +119,26 @@ export default function UserProfile() {
         rows.map((row) => (row.id === bookingId ? { ...row, hunterConfirmedViewing: true } : row))
       )
     }
+  }
+
+  async function handleSubmitReview(rating: number, comment: string): Promise<boolean> {
+    if (!reviewTarget) return false
+
+    if (supabase && profile) {
+      const { error } = await supabase.from('reviews').insert({
+        booking_id: reviewTarget.id,
+        property_id: reviewTarget.propertyId,
+        hunter_id: profile.id,
+        rating,
+        comment: comment || null
+      })
+      if (error) return false
+    }
+
+    setViewings((rows) =>
+      rows.map((row) => (row.id === reviewTarget.id ? { ...row, myRating: rating } : row))
+    )
+    return true
   }
 
   return (
@@ -202,19 +245,36 @@ export default function UserProfile() {
                             ? 'KES 200 deposit released to agent'
                             : 'KES 200 deposit held in escrow'}
                       </span>
-                      {canRelease &&
-                        (supabase ? (
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        {viewing.myRating ? (
+                          <span className="rounded-full bg-limewash px-2.5 py-1 text-[11px] font-medium text-amber-600">
+                            ★ {viewing.myRating} rated
+                          </span>
+                        ) : viewing.status === 'completed' && viewing.hunterConfirmedViewing ? (
                           <button
                             type="button"
-                            disabled={busy}
-                            onClick={() => void handleRelease(viewing.id)}
-                            className="rounded-full bg-verified px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-verified/90 disabled:opacity-50"
+                            onClick={() => setReviewTarget(viewing)}
+                            className="rounded-full bg-ink px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-agent"
                           >
-                            {busy ? 'Releasing…' : 'Attended — release'}
+                            Rate viewing
                           </button>
-                        ) : (
-                          <span className="text-[11px] italic text-neutral-400">Demo data</span>
-                        ))}
+                        ) : null}
+
+                        {canRelease &&
+                          (supabase ? (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void handleRelease(viewing.id)}
+                              className="rounded-full bg-verified px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-verified/90 disabled:opacity-50"
+                            >
+                              {busy ? 'Releasing…' : 'Attended — release'}
+                            </button>
+                          ) : (
+                            <span className="text-[11px] italic text-neutral-400">Demo data</span>
+                          ))}
+                      </div>
                     </div>
                   </article>
                 )
@@ -228,6 +288,13 @@ export default function UserProfile() {
           )}
         </section>
       )}
+
+      <ReviewModal
+        open={reviewTarget !== null}
+        onClose={() => setReviewTarget(null)}
+        propertyTitle={reviewTarget?.propertyTitle ?? ''}
+        onSubmit={handleSubmitReview}
+      />
     </main>
   )
 }
