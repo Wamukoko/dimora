@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useEscrowRelease } from '@/hooks/useEscrowRelease'
 import { supabase } from '@/lib/supabaseClient'
@@ -129,6 +130,15 @@ export default function UserProfile() {
               </dd>
             </div>
           </dl>
+        )}
+
+        {profile?.role === 'admin' && (
+          <Link
+            to="/admin"
+            className="mt-4 block rounded-xl border border-line px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-terracotta"
+          >
+            Verification review console →
+          </Link>
         )}
 
         <Button variant="secondary" size="lg" className="mt-8" onClick={() => void signOut()}>

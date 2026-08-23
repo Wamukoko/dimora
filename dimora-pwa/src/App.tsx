@@ -13,6 +13,7 @@ import UserProfile from '@/pages/UserProfile'
 import PropertyDetail from '@/pages/PropertyDetail'
 import AgentListings from '@/pages/AgentListings'
 import VerifyListing from '@/pages/VerifyListing'
+import AdminReview from '@/pages/AdminReview'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -73,6 +74,16 @@ export default function App() {
           element={
             <Protected>
               <UserProfile />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Protected>
+              <AgentChrome>
+                <AdminReview />
+              </AgentChrome>
             </Protected>
           }
         />

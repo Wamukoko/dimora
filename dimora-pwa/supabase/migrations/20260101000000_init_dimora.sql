@@ -433,6 +433,9 @@ CREATE POLICY "Owners update pending submissions, admins approve"
         public.get_auth_role() = 'admin'
         OR verified_by IS NULL
     );
+
+CREATE POLICY "Admins can reject submissions"
+    ON public.property_verifications FOR DELETE USING (public.get_auth_role() = 'admin');
 CREATE POLICY "Only admins can write verifications"
     ON public.property_verifications FOR INSERT WITH CHECK (public.get_auth_role() = 'admin');
 
