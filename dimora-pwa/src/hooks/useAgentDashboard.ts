@@ -26,6 +26,26 @@ export interface DashboardData {
   bookings: AgentBookingView[]
 }
 
+export interface NewListingInput {
+  title: string
+  description: string
+  price: number
+  type: string
+  county: string
+  sub_county: string
+  neighborhood: string
+  bedrooms: number
+  bathrooms: number
+  images: string[]
+}
+
+interface UseAgentDashboardResult {
+  loading: boolean
+  data: DashboardData
+  addListing: (profileId: string, input: NewListingInput) => Promise<boolean>
+  addLead: (profileId: string, leadName: string, leadPhone: string) => Promise<boolean>
+}
+
 const DAY = 24 * 60 * 60 * 1000
 
 function iso(offsetDays: number, hour = 10): string {
@@ -109,9 +129,64 @@ export const DEMO_DASHBOARD_DATA: DashboardData = {
   ]
 }
 
-export function useAgentDashboard(): { loading: boolean; data: DashboardData } {
+export function useAgentDashboard(): UseAgentDashboardResult {
   const [data, setData] = useState<DashboardData>(DEMO_DASHBOARD_DATA)
   const [loading, setLoading] = useState(() => Boolean(supabase))
+
+  async function addListing(profileId: string, input: NewListingInput): Promise<boolean> {
+    if (!supabase) {
+      setData((prev) => ({
+        ...prev,
+        totalListings: prev.totalListings + 1,
+        activeListings: prev.activeListings + 1
+      }))
+      return true
+    }
+
+    const { error } = await supabase.from('properties').insert({
+      agent_id: profileId,
+      status: 'published',
+      ...input
+    })
+    if (error) return false
+
+    setData((prev) => ({
+      ...prev,
+      totalListings: prev.totalListings + 1,
+      activeListings: prev.activeListings + 1
+    }))
+    return true
+  }
+
+  async function addLead(profileId: string, leadName: string, leadPhone: string): Promise<boolean> {
+    const item: WorkspaceItem = {
+      id: `local-${Date.now()}`,
+      title: 'New enquiry',
+      leadName,
+      leadPhone: leadPhone || null,
+      leadSource: 'manual',
+      stage: 'new_lead',
+      dueDate: null
+    }
+
+    if (!supabase) {
+      setData((prev) => ({ ...prev, items: [item, ...prev.items] }))
+      return true
+    }
+
+    const { error } = await supabase.from('agent_workspace_items').insert({
+      agent_id: profileId,
+      title: item.title,
+      lead_name: leadName,
+      lead_phone: leadPhone || null,
+      lead_source: 'manual',
+      stage: 'new_lead'
+    })
+    if (error) return false
+
+    setData((prev) => ({ ...prev, items: [item, ...prev.items] }))
+    return true
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -168,5 +243,5 @@ export function useAgentDashboard(): { loading: boolean; data: DashboardData } {
     }
   }, [])
 
-  return { loading, data }
+  return { loading, data, addListing, addLead }
 }

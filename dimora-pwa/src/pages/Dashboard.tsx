@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAgentDashboard } from '@/hooks/useAgentDashboard'
+import { NewListingModal } from '@/components/agent/NewListingModal'
 
 const STAGES = [
   { key: 'new_lead', label: 'New lead' },
@@ -38,7 +39,8 @@ function formatShortDate(iso: string): string {
 
 export default function Dashboard() {
   const { profile } = useAuth()
-  const { loading, data } = useAgentDashboard()
+  const { loading, data, addListing, addLead } = useAgentDashboard()
+  const [showNewListing, setShowNewListing] = useState(false)
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const hour = new Date().getHours()
@@ -68,10 +70,21 @@ export default function Dashboard() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6">
-      <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
-        {greeting}, {firstName}.
-      </h1>
-      <p className="mt-1 text-sm text-white/60">Here's your pipeline today.</p>
+      <div className="mt-6 flex items-start justify-between gap-4 sm:mt-6">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            {greeting}, {firstName}.
+          </h1>
+          <p className="mt-1 text-sm text-white/60">Here's your pipeline today.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowNewListing(true)}
+          className="shrink-0 rounded-xl bg-terracotta px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-terracotta-hover"
+        >
+          + Add listing
+        </button>
+      </div>
 
       <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Key stats">
         <StatCard label="Active listings" value={String(data.activeListings)} />
@@ -121,6 +134,12 @@ export default function Dashboard() {
                     ))}
                   <button
                     type="button"
+                    onClick={() => {
+                      const name = window.prompt('Lead name')
+                      if (!name?.trim()) return
+                      const phone = window.prompt('Phone number (optional)') ?? ''
+                      void addLead(profile?.id ?? 'demo-agent', name.trim(), phone.trim())
+                    }}
                     className="w-full rounded-xl border border-dashed border-white/20 px-3 py-2 text-xs font-medium text-white/50 transition-colors hover:border-terracotta hover:text-white"
                   >
                     + Add lead
@@ -166,6 +185,12 @@ export default function Dashboard() {
           </ul>
         )}
       </section>
+
+      <NewListingModal
+        open={showNewListing}
+        onClose={() => setShowNewListing(false)}
+        onSubmit={(input) => addListing(profile?.id ?? 'demo-agent', input)}
+      />
     </main>
   )
 }
