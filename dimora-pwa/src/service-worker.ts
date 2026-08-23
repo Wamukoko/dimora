@@ -14,8 +14,13 @@ interface SyncEvent extends ExtendableEventLike {
 
 interface ServiceWorkerContext {
   __WB_MANIFEST: unknown[]
+  skipWaiting(): Promise<void>
+  clients: {
+    claim(): Promise<void>
+  }
   addEventListener(type: 'sync', handler: (event: SyncEvent) => void): void
   addEventListener(type: 'install', handler: (event: ExtendableEventLike) => void): void
+  addEventListener(type: 'activate', handler: (event: ExtendableEventLike) => void): void
 }
 
 declare const self: ServiceWorkerContext
@@ -48,6 +53,14 @@ registerRoute(
     plugins: [new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 604800 })]
   })
 )
+
+self.addEventListener('install', () => {
+  void self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
 
 self.addEventListener('sync', (event) => {
   if (event.tag === SYNC_TAG) {
