@@ -42,6 +42,7 @@ export default function App() {
       <ErrorBoundary>
       <ScrollToTop />
       <ConnectivityBanner />
+      <InstallBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route

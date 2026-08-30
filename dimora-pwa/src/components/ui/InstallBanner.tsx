@@ -30,14 +30,9 @@ export function InstallBanner() {
     window.addEventListener('beforeinstallprompt', onBeforeInstall)
     window.addEventListener('appinstalled', onAppInstalled)
 
-    const check = window.setTimeout(() => {
-      setState((current) => (current === 'loading' ? 'dismissed' : current))
-    }, 12000)
-
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstall)
       window.removeEventListener('appinstalled', onAppInstalled)
-      window.clearTimeout(check)
     }
   }, [])
 
