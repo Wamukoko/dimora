@@ -55,6 +55,29 @@ export default function AgentListings() {
       )}
 
       <div className="mt-5">
+        <div className="rounded-2xl bg-purple-500/10 border border-purple-500/20 p-4 mb-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-purple-400">📊</span>
+              <h3 className="text-sm font-semibold text-purple-300">Performance Analytics</h3>
+            </div>
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              🚀 COMING SOON
+            </span>
+          </div>
+          <p className="text-xs text-white/60 mt-2">
+            Analytics dashboard with listing performance, conversion metrics, and engagement tracking.
+          </p>
+          <div className="mt-3 rounded-xl bg-white/5 p-3">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="text-white/50">Listing views: <span className="text-white/70 font-medium">0</span></div>
+              <div className="text-white/50">Conversion rate: <span className="text-white/70 font-medium">0%</span></div>
+              <div className="text-white/50">Response time: <span className="text-white/70 font-medium">0s</span></div>
+              <div className="text-white/50">Top performers: <span className="text-white/70 font-medium">0</span></div>
+            </div>
+          </div>
+        </div>
+        
         <ListingAnalyticsPanel agentId={profile?.id} />
       </div>
 

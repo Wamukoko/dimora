@@ -27,6 +27,22 @@ export interface DashboardData {
   activeListings: number
   items: WorkspaceItem[]
   bookings: AgentBookingView[]
+  // Financial features (COMING SOON - Phase 1)
+  financialData?: {
+    totalRevenue: number
+    pendingPayments: number
+    escrowHeld: number
+    payoutsProcessed: number
+    paymentSuccessRate: number
+  }
+  // Analytics features (COMING SOON - Phase 1)
+  analyticsData?: {
+    listingViews: number
+    conversionRate: number
+    averageResponseTime: number
+    topPerformingListings: string[]
+    monthlyTrends: { month: string; revenue: number }[]
+  }
 }
 
 export interface NewListingInput {
@@ -144,7 +160,23 @@ export const DEMO_DASHBOARD_DATA: DashboardData = {
       hunterConfirmedViewing: true,
       propertyTitle: 'Garden Townhouse, Karen'
     }
-  ]
+  ],
+  // Financial features (COMING SOON - Phase 1)
+  financialData: {
+    totalRevenue: 0,
+    pendingPayments: 0,
+    escrowHeld: 0,
+    payoutsProcessed: 0,
+    paymentSuccessRate: 0
+  },
+  // Analytics features (COMING SOON - Phase 1)
+  analyticsData: {
+    listingViews: 0,
+    conversionRate: 0,
+    averageResponseTime: 0,
+    topPerformingListings: [],
+    monthlyTrends: []
+  }
 }
 
 export function useAgentDashboard(): UseAgentDashboardResult {

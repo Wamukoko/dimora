@@ -204,6 +204,112 @@ export default function Dashboard() {
         )}
       </section>
 
+      {/* Financial Features - COMING SOON (Phase 1) */}
+      <section className="mt-8" aria-label="Financial overview">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-semibold text-white">Financial overview</h2>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            🚀 COMING SOON - Phase 1
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Total revenue</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              KES 0
+            </p>
+            <p className="mt-1 text-[10px] text-amber-400">Available in Phase 1</p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Pending payments</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              KES 0
+            </p>
+            <p className="mt-1 text-[10px] text-amber-400">Available in Phase 1</p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Escrow held</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              KES 0
+            </p>
+            <p className="mt-1 text-[10px] text-amber-400">Available in Phase 1</p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Payouts processed</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              0
+            </p>
+            <p className="mt-1 text-[10px] text-amber-400">Available in Phase 1</p>
+          </div>
+        </div>
+        
+        <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-amber-400">📅</span>
+            <p className="text-sm text-amber-300">
+              Financial dashboard launching in Phase 1 (Months 1-2)
+            </p>
+          </div>
+          <p className="text-xs text-white/60 mt-1">
+            Track revenue, manage payments, and monitor escrow status.
+          </p>
+        </div>
+      </section>
+
+      {/* Analytics Features - COMING SOON (Phase 1) */}
+      <section className="mt-8" aria-label="Performance analytics">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-semibold text-white">Performance analytics</h2>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            🚀 COMING SOON - Phase 1
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Listing views</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              0
+            </p>
+            <p className="mt-1 text-[10px] text-purple-400">Available in Phase 1</p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Conversion rate</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              0%
+            </p>
+            <p className="mt-1 text-[10px] text-purple-400">Available in Phase 1</p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Avg response time</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              0
+            </p>
+            <p className="mt-1 text-[10px] text-purple-400">Available in Phase 1</p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 opacity-60">
+            <p className="text-xs font-medium text-white/60">Top performers</p>
+            <p className="mt-1 font-display text-lg font-bold tabular-nums text-white/40">
+              0
+            </p>
+            <p className="mt-1 text-[10px] text-purple-400">Available in Phase 1</p>
+          </div>
+        </div>
+        
+        <div className="mt-4 rounded-xl bg-purple-500/10 border border-purple-500/20 p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-purple-400">📊</span>
+            <p className="text-sm text-purple-300">
+              Analytics dashboard launching in Phase 1 (Months 1-2)
+            </p>
+          </div>
+          <p className="text-xs text-white/60 mt-1">
+            Track listing performance, conversion metrics, and user engagement.
+          </p>
+        </div>
+      </section>
+
       <NewListingModal
         open={showNewListing}
         onClose={() => setShowNewListing(false)}
