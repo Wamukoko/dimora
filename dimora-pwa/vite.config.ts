@@ -14,7 +14,7 @@ export default defineConfig({
         description: 'Verified properties and agent workspace for Kenya.',
         theme_color: '#EDE6D6',
         background_color: '#EDE6D6',
-        display: 'standalone',
+        display: 'fullscreen',
         orientation: 'portrait',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
