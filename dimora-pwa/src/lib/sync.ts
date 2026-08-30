@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   getSyncQueue,
   clearQueueItem,
@@ -13,7 +14,10 @@ export interface SyncResult {
   deadLettered: number
 }
 
-async function dispatchAction(supabaseClient: NonNullable<typeof supabase>, item: OfflineAction): Promise<void> {
+export async function dispatchAction(
+  supabaseClient: SupabaseClient,
+  item: OfflineAction
+): Promise<void> {
   switch (item.type) {
     case 'BOOKING_REQUEST': {
       const { property_id } = item.payload as { property_id?: string }
@@ -38,8 +42,8 @@ async function dispatchAction(supabaseClient: NonNullable<typeof supabase>, item
   }
 }
 
-export async function processSyncQueue(): Promise<SyncResult> {
-  if (!supabase) return { synced: 0, deadLettered: 0 }
+export async function processSyncQueue(client: SupabaseClient | null = supabase): Promise<SyncResult> {
+  if (!client) return { synced: 0, deadLettered: 0 }
 
   const queue = await getSyncQueue()
   let synced = 0
@@ -48,7 +52,7 @@ export async function processSyncQueue(): Promise<SyncResult> {
   for (const item of queue) {
     if (item.id === undefined) continue
     try {
-      await dispatchAction(supabase, item)
+      await dispatchAction(client, item)
       await clearQueueItem(item.id)
       synced++
     } catch {

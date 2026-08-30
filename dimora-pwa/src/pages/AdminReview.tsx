@@ -1,5 +1,7 @@
 import { useAuth } from '@/hooks/useAuth'
+import { Link } from 'react-router-dom'
 import { kindLabel, useAdminVerifications } from '@/hooks/useAdminVerifications'
+import { formatDistanceMeters } from '@/lib/verification'
 
 export default function AdminReview() {
   const { profile } = useAuth()
@@ -25,11 +27,16 @@ export default function AdminReview() {
         <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
           Verification review
         </h1>
-        {!loading && (
-          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs tabular-nums text-white/70">
-            {rows.length} pending
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {!loading && (
+            <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs tabular-nums text-white/70">
+              {rows.length} pending
+            </span>
+          )}
+          <Link to="/admin/kyc" className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/70 transition-colors hover:bg-white/20 hover:text-white">
+            KYC queue →
+          </Link>
+        </div>
       </div>
       <p className="mt-1 text-sm text-white/60">
         Approving the three required kinds for a listing flips its Verified badge automatically.
@@ -99,6 +106,13 @@ export default function AdminReview() {
                         {row.latitude.toFixed(5)}, {row.longitude.toFixed(5)}
                       </dd>
                     </div>
+                  )}
+                  {row.geoMismatch?.flagged && (
+                    <p className="rounded-lg bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-300">
+                      GPS drift — evidence captured ~
+                      {formatDistanceMeters(row.geoMismatch.distanceMeters)} from the listed
+                      location.
+                    </p>
                   )}
                 </dl>
 

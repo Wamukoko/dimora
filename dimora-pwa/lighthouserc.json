@@ -1,0 +1,49 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 1,
+      "startServerCommand": "npx serve@14 -s dist -l 4173",
+      "url": ["http://127.0.0.1:4173/"]
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.5 }],
+        "categories:accessibility": ["error", { "minScore": 0.85 }],
+        "categories:seo": ["warn", { "minScore": 0.7 }],
+        "first-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 3500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.2 }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 600 }],
+        "unused-javascript": ["warn", { "maxLength": 0.3 }]
+      }
+    },
+    "budget": {
+      "path": "/",
+      "options": {
+        "errorBudget": true
+      },
+      "budgets": [
+        {
+          "resourceSizes": [
+            { "resourceType": "script", "budget": 550 },
+            { "resourceType": "stylesheet", "budget": 60 },
+            { "resourceType": "total", "budget": 3200 }
+          ],
+          "resourceCounts": [
+            { "resourceType": "script", "budget": 16 },
+            { "resourceType": "image", "budget": 25 }
+          ],
+          "timings": [
+            { "metric": "first-contentful-paint", "budget": 2500 },
+            { "metric": "largest-contentful-paint", "budget": 3500 }
+          ]
+        }
+      ]
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "lighthouse-reports",
+      "reportFilenamePattern": "lighthouse-%%PROJECT_NAME%%-%%DATETIME%%.report"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { parseCallback } from "../_shared/payments.ts";
 
 serve(async (req) => {
   try {
@@ -11,30 +12,25 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const stkCallback = body?.Body?.stkCallback;
-    if (!stkCallback) return new Response("Invalid Payload", { status: 400 });
-
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = stkCallback;
+    const callback = parseCallback(body);
+    if (!callback) return new Response("Invalid Payload", { status: 400 });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    if (ResultCode === 0) {
-      const items: Array<{ Name: string; Value: any }> = CallbackMetadata.Item;
-      const receipt = items.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
-
+    if (callback.resultCode === 0) {
       // Idempotent update — ".eq(status, 'pending')" makes a retried webhook a no-op.
       const { data: payment } = await supabase
         .from("payments")
         .update({
           status: "completed",
-          mpesa_receipt_number: receipt,
+          mpesa_receipt_number: callback.mpesaReceiptNumber,
           raw_callback: body,
           updated_at: new Date().toISOString(),
         })
-        .eq("checkout_request_id", CheckoutRequestID)
+        .eq("checkout_request_id", callback.checkoutRequestId)
         .eq("status", "pending")
         .select("booking_id, purpose")
         .single();
@@ -53,11 +49,11 @@ serve(async (req) => {
         .from("payments")
         .update({
           status: "failed",
-          failure_reason: ResultDesc,
+          failure_reason: callback.resultDesc,
           raw_callback: body,
           updated_at: new Date().toISOString(),
         })
-        .eq("checkout_request_id", CheckoutRequestID)
+        .eq("checkout_request_id", callback.checkoutRequestId)
         .eq("status", "pending"); // idempotent here too
     }
 

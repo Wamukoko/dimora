@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAgentListings } from '@/hooks/useAgentListings'
 import { VerifiedBadge } from '@/components/property/VerifiedBadge'
+import { ListingAnalyticsPanel } from '@/components/dashboard/ListingAnalyticsPanel'
+import { BoostModal } from '@/components/dashboard/BoostModal'
+import { supabase } from '@/lib/supabaseClient'
+import { boostExpiresAt } from '@/lib/boost'
 
 function formatKes(amount: number): string {
   return `KES ${amount.toLocaleString('en-KE')}`
@@ -11,6 +16,23 @@ export default function AgentListings() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const { rows, loading, error, togglePublished } = useAgentListings(profile?.id)
+  const [boostTarget, setBoostTarget] = useState<string | null>(null)
+  const [boosted, setBoosted] = useState<Set<string>>(new Set())
+
+  async function handleBoost(listing: (typeof rows)[number]): Promise<boolean> {
+    if (supabase && profile) {
+      const { error: err } = await supabase
+        .from('properties')
+        .update({ is_boosted: true, boost_expires_at: boostExpiresAt() })
+        .eq('id', listing.id)
+        .eq('agent_id', profile.id)
+      if (err) return false
+    }
+    setBoosted((prev) => new Set(prev).add(listing.id))
+    return true
+  }
+
+  const boostListing = rows.find((row) => row.id === boostTarget) ?? null
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6">
@@ -31,6 +53,10 @@ export default function AgentListings() {
           {error}
         </p>
       )}
+
+      <div className="mt-5">
+        <ListingAnalyticsPanel agentId={profile?.id} />
+      </div>
 
       {loading ? (
         <div className="mt-5 space-y-2">
@@ -64,6 +90,11 @@ export default function AgentListings() {
                 <div className="flex items-center gap-2">
                   <h2 className="truncate text-sm font-semibold text-white">{row.title}</h2>
                   {row.isVerified && <VerifiedBadge size="sm" />}
+                  {boosted.has(row.id) && (
+                    <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                      ◉ Boosted
+                    </span>
+                  )}
                 </div>
                 <p className="truncate text-xs text-white/50">
                   {formatKes(row.price)} · {row.neighborhood}, {row.county}
@@ -81,6 +112,13 @@ export default function AgentListings() {
                   }`}
                 >
                   {row.isPublished ? 'Live' : 'Paused'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoostTarget(row.id)}
+                  className="rounded-full bg-amber-500/15 px-3 py-1 text-[11px] font-semibold text-amber-300 transition-colors hover:bg-amber-500/25"
+                >
+                  Boost ◉
                 </button>
                 <button
                   type="button"
@@ -104,6 +142,13 @@ export default function AgentListings() {
           ))}
         </ul>
       )}
+
+      <BoostModal
+        listing={boostListing}
+        open={boostListing !== null}
+        onClose={() => setBoostTarget(null)}
+        onActivate={handleBoost}
+      />
     </main>
   )
 }

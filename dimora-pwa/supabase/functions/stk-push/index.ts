@@ -1,13 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
-
-function formatPhoneNumber(phone: string): string {
-  let cleaned = phone.replace(/\D/g, "");
-  if (cleaned.startsWith("0")) cleaned = "254" + cleaned.substring(1);
-  else if (cleaned.startsWith("7") || cleaned.startsWith("1")) cleaned = "254" + cleaned;
-  return cleaned;
-}
+import { formatPhoneNumber, resolveAuthoritativeAmount } from "../_shared/payments.ts";
 
 async function getMpesaAccessToken(): Promise<string> {
   const consumerKey = Deno.env.get("MPESA_CONSUMER_KEY")!;
@@ -29,17 +23,6 @@ async function getMpesaAccessToken(): Promise<string> {
 
 // Server-side amount authority — never trust a client-supplied amount.
 // ADR-005 note: amounts are flat policy values until a pricing table exists.
-async function resolveAuthoritativeAmount(
-  purpose: "viewing_deposit" | "listing_boost" | "subscription" | "rent"
-): Promise<number> {
-  if (purpose === "viewing_deposit") {
-    return 200; // KES, flat viewing deposit held in escrow
-  }
-  if (purpose === "listing_boost") {
-    return 500; // KES, flat boost fee
-  }
-  throw new Error(`Unsupported or not-yet-priced payment purpose: ${purpose}`);
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -70,7 +53,7 @@ serve(async (req) => {
     const { phoneNumber, bookingId, purpose = "viewing_deposit", accountReference = "DIMORA" } = await req.json();
 
     // 'amount' is intentionally NOT read from the request body.
-    const amount = await resolveAuthoritativeAmount(purpose);
+    const amount = resolveAuthoritativeAmount(purpose).amount;
 
     const formattedPhone = formatPhoneNumber(phoneNumber);
     const shortCode = Deno.env.get("MPESA_SHORTCODE")!;

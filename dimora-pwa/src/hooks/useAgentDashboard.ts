@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { findExistingLead, type LeadSource } from '@/lib/leads'
 
 export interface WorkspaceItem {
   id: string
   title: string
   leadName: string | null
   leadPhone: string | null
+  email?: string | null
   leadSource: string
   stage: string
   dueDate: string | null
+  notes?: string | null
 }
 
 export interface AgentBookingView {
@@ -39,11 +42,26 @@ export interface NewListingInput {
   images: string[]
 }
 
+export interface LeadInput {
+  name: string
+  phone: string
+  email?: string
+  source?: LeadSource
+  context?: string
+  notes?: string
+  dueDate?: string
+  stage?: string
+}
+
+export type AddLeadResult =
+  | { ok: true }
+  | { ok: false; duplicate: boolean; error?: string }
+
 interface UseAgentDashboardResult {
   loading: boolean
   data: DashboardData
   addListing: (profileId: string, input: NewListingInput, files?: File[]) => Promise<boolean>
-  addLead: (profileId: string, leadName: string, leadPhone: string) => Promise<boolean>
+  addLead: (profileId: string, input: LeadInput, force?: boolean) => Promise<AddLeadResult>
 }
 
 const DAY = 24 * 60 * 60 * 1000
@@ -177,34 +195,52 @@ export function useAgentDashboard(): UseAgentDashboardResult {
     return true
   }
 
-  async function addLead(profileId: string, leadName: string, leadPhone: string): Promise<boolean> {
+  async function addLead(profileId: string, input: LeadInput, force = false): Promise<AddLeadResult> {
+    const email = input.email?.trim().toLowerCase() || null
     const item: WorkspaceItem = {
       id: `local-${Date.now()}`,
-      title: 'New enquiry',
-      leadName,
-      leadPhone: leadPhone || null,
-      leadSource: 'manual',
-      stage: 'new_lead',
-      dueDate: null
+      title: input.context?.trim() || 'New enquiry',
+      leadName: input.name.trim(),
+      leadPhone: input.phone.trim() || null,
+      email,
+      leadSource: input.source ?? 'manual',
+      stage: input.stage ?? 'new_lead',
+      dueDate: input.dueDate ? new Date(input.dueDate).toISOString() : null,
+      notes: input.notes?.trim() || null
     }
 
     if (!supabase) {
+      if (!force && findExistingLead(data.items, input.phone, email ?? undefined)) {
+        return { ok: false, duplicate: true }
+      }
       setData((prev) => ({ ...prev, items: [item, ...prev.items] }))
-      return true
+      return { ok: true }
     }
+
+    const phone = input.phone.trim().replace(/\D/g, '')
+    const { data: existingRow } = await supabase
+      .from('agent_workspace_items')
+      .select('id')
+      .eq('agent_id', profileId)
+      .eq('lead_phone', phone)
+      .maybeSingle()
+    if (existingRow && !force) return { ok: false, duplicate: true }
 
     const { error } = await supabase.from('agent_workspace_items').insert({
       agent_id: profileId,
       title: item.title,
-      lead_name: leadName,
-      lead_phone: leadPhone || null,
-      lead_source: 'manual',
-      stage: 'new_lead'
+      lead_name: item.leadName,
+      lead_phone: phone,
+      lead_email: email,
+      lead_source: item.leadSource,
+      stage: item.stage,
+      notes: item.notes,
+      due_date: item.dueDate
     })
-    if (error) return false
+    if (error) return { ok: false, duplicate: false, error: error.message }
 
     setData((prev) => ({ ...prev, items: [item, ...prev.items] }))
-    return true
+    return { ok: true }
   }
 
   useEffect(() => {
@@ -220,7 +256,7 @@ export function useAgentDashboard(): UseAgentDashboardResult {
         supabase.from('properties').select('id,is_published'),
         supabase
           .from('agent_workspace_items')
-          .select('id,title,lead_name,lead_phone,lead_source,stage,due_date')
+          .select('id,title,lead_name,lead_phone,lead_email,lead_source,stage,notes,due_date')
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
@@ -241,8 +277,10 @@ export function useAgentDashboard(): UseAgentDashboardResult {
           title: item.title,
           leadName: item.lead_name,
           leadPhone: item.lead_phone,
+          email: item.lead_email,
           leadSource: item.lead_source,
           stage: item.stage,
+          notes: item.notes,
           dueDate: item.due_date
         })),
         bookings: rows.map((row) => ({

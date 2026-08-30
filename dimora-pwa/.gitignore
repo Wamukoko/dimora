@@ -7,3 +7,5 @@ dev-dist
 .DS_Store
 dev-server.log
 *.log
+.vercel
+.env*

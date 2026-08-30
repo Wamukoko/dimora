@@ -225,12 +225,20 @@ export default function UserProfile() {
         )}
 
         {profile?.role === 'admin' && (
-          <Link
-            to="/admin"
-            className="mt-4 block rounded-xl border border-line px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-terracotta"
-          >
-            Verification review console →
-          </Link>
+          <div className="mt-4 space-y-2">
+            <Link
+              to="/admin"
+              className="block rounded-xl border border-line px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-terracotta"
+            >
+              Verification review console →
+            </Link>
+            <Link
+              to="/admin/kyc"
+              className="block rounded-xl border border-line px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-terracotta"
+            >
+              Agent KYC console →
+            </Link>
+          </div>
         )}
 
         <Button variant="secondary" size="lg" className="mt-8" onClick={() => void signOut()}>
@@ -240,7 +248,15 @@ export default function UserProfile() {
 
       {profile?.role === 'hunter' && (
         <section className="mt-6">
-          <h2 className="px-1 font-display text-lg font-semibold tracking-tight">My viewings</h2>
+          <div className="flex items-center justify-between px-1">
+            <h2 className="font-display text-lg font-semibold tracking-tight">My viewings</h2>
+            <Link
+              to="/rent-ledger"
+              className="text-xs font-medium text-neutral-500 underline underline-offset-4 transition-colors hover:text-terracotta"
+            >
+              Rent ledger →
+            </Link>
+          </div>
           {viewingsLoading ? (
             <div className="mt-3 space-y-3">
               {[0, 1].map((i) => (

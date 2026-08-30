@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:ci": "vitest run --reporter=dot",
+    "test:rls": "node scripts/run-rls-tests.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.0.0",
@@ -19,15 +23,23 @@
     "react-router-dom": "^6.26.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.6",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^30.0.1",
+    "pg": "^8.23.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4",
     "vite": "^5.4.0",
     "vite-plugin-pwa": "^0.20.1",
+    "vitest": "^3.2.7",
     "workbox-expiration": "^7.1.0",
     "workbox-precaching": "^7.1.0",
     "workbox-routing": "^7.1.0",

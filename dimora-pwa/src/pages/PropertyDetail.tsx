@@ -9,10 +9,12 @@ import { DEMO_AGENT, DEMO_PROPERTIES, DEMO_VERIFIED_KINDS } from '@/lib/demoData
 import type { Property, PublicProfile, VerificationKind } from '@/types/database'
 import { verificationKindLabels } from '@/types/database'
 import { VerifiedBadge } from '@/components/property/VerifiedBadge'
+import { PriceComparison } from '@/components/property/PriceComparison'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { useStkPush } from '@/hooks/useStkPush'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { trackListingEvent } from '@/lib/analytics'
 
 type BookingState = 'idle' | 'submitting' | 'pay' | 'awaiting_pin' | 'confirmed' | 'queued' | 'error'
 
@@ -130,6 +132,8 @@ export default function PropertyDetail() {
   const [bookingState, setBookingState] = useState<BookingState>('idle')
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [bookingId, setBookingId] = useState<string | null>(null)
+  const [checkoutRequestId, setCheckoutRequestId] = useState<string | null>(null)
+  const [recheckTick, setRecheckTick] = useState(0)
   const [payPhone, setPayPhone] = useState('')
   const { state: stkState, error: stkError, initiateStkPush } = useStkPush()
 
@@ -347,6 +351,47 @@ export default function PropertyDetail() {
     }
   }, [property?.id, property?.agent_id])
 
+  useEffect(() => {
+    if (!property || fromCache) return
+    void trackListingEvent(property.id, 'view')
+  }, [property?.id, fromCache])
+
+  useEffect(() => {
+    if (bookingState !== 'awaiting_pin' || !bookingId || !checkoutRequestId || !supabase) return
+
+    const db = supabase
+    let cancelled = false
+    let attempts = 0
+
+    const timer = window.setInterval(() => {
+      attempts += 1
+      void (async () => {
+        const { data } = await db
+          .from('payments')
+          .select('status, failure_reason')
+          .eq('checkout_request_id', checkoutRequestId!)
+          .maybeSingle()
+        if (cancelled) return
+
+        if (data?.status === 'completed') {
+          setBookingState('confirmed')
+          window.clearInterval(timer)
+        } else if (data?.status === 'failed') {
+          setBookingError(data.failure_reason ?? 'Payment was declined — try again.')
+          setBookingState('pay')
+          window.clearInterval(timer)
+        } else if (attempts >= 40) {
+          window.clearInterval(timer)
+        }
+      })()
+    }, 3000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [bookingState, bookingId, checkoutRequestId, recheckTick])
+
   async function handleBook(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!property) return
@@ -403,7 +448,10 @@ export default function PropertyDetail() {
       purpose: 'viewing_deposit',
       accountReference: 'VIEWING'
     })
-    if (!result.error) setBookingState('awaiting_pin')
+    if (!result.error) {
+      setCheckoutRequestId(result.checkoutRequestId ?? null)
+      setBookingState('awaiting_pin')
+    }
   }
 
   if (loading) {
@@ -538,6 +586,10 @@ export default function PropertyDetail() {
             )}
           </section>
 
+          <section aria-label="Similar homes">
+            <PriceComparison property={property} />
+          </section>
+
           <section aria-label="Share">
             <h2 className="font-display text-lg font-semibold">Share this home</h2>
             <div className="mt-2 flex gap-2">
@@ -547,6 +599,7 @@ export default function PropertyDetail() {
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => void trackListingEvent(property.id, 'whatsapp_click')}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden="true">
@@ -649,7 +702,12 @@ export default function PropertyDetail() {
               Check your phone — enter your M-PESA PIN on the prompt we just sent. Your viewing is confirmed
               the moment payment lands, and you'll get an SMS receipt.
             </div>
-            <Button variant="secondary" size="lg" onClick={() => setBookingOpen(false)}>Done</Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="lg" onClick={() => setRecheckTick((tick) => tick + 1)}>
+                I've paid — recheck
+              </Button>
+              <Button variant="secondary" size="lg" onClick={() => setBookingOpen(false)}>Done</Button>
+            </div>
           </div>
         ) : bookingState === 'pay' ? (
           <div className="mt-4 space-y-4">

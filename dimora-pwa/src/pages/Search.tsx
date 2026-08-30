@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useProperties } from '@/hooks/useProperties'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { filterProperties } from '@/lib/filter'
 import { PropertyCard } from '@/components/property/PropertyCard'
 
 const propertyTypes = ['apartment', 'house', 'bedsitter', 'townhouse', 'commercial', 'land'] as const
@@ -12,19 +13,7 @@ export default function Search() {
   const [query, setQuery] = useState('')
   const [type, setType] = useState<string | null>(null)
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return properties.filter((p) => {
-      if (type && p.type !== type) return false
-      if (!q) return true
-      return (
-        p.title.toLowerCase().includes(q) ||
-        p.neighborhood.toLowerCase().includes(q) ||
-        p.sub_county.toLowerCase().includes(q) ||
-        p.county.toLowerCase().includes(q)
-      )
-    })
-  }, [properties, query, type])
+  const results = filterProperties(properties, query, type)
 
   function handleSearch(event: FormEvent) {
     event.preventDefault()

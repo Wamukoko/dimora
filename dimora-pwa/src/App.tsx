@@ -5,6 +5,7 @@ import { HeaderBar } from '@/components/layout/HeaderBar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { Protected } from '@/components/routing/Protected'
 import { ConnectivityBanner } from '@/components/layout/ConnectivityBanner'
+import { InstallBanner } from '@/components/ui/InstallBanner'
 import { ErrorBoundary } from '@/components/routing/ErrorBoundary'
 import Home from '@/pages/Home'
 import Search from '@/pages/Search'
@@ -15,6 +16,8 @@ import PropertyDetail from '@/pages/PropertyDetail'
 import AgentListings from '@/pages/AgentListings'
 import VerifyListing from '@/pages/VerifyListing'
 import AdminReview from '@/pages/AdminReview'
+import AdminKyc from '@/pages/AdminKyc'
+import RentLedger from '@/pages/RentLedger'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -89,6 +92,16 @@ export default function App() {
             </Protected>
           }
         />
+        <Route
+          path="/admin/kyc"
+          element={
+            <Protected>
+              <AgentChrome>
+                <AdminKyc />
+              </AgentChrome>
+            </Protected>
+          }
+        />
         <Route path="*" element={<HunterShell />} />
       </Routes>
       </ErrorBoundary>
@@ -103,12 +116,15 @@ function HunterShell() {
 
   return (
     <>
+      <ConnectivityBanner />
       <HeaderBar />
+      {!isDetail && <InstallBanner />}
       <div className={isDetail ? '' : 'pb-[72px]'}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/property/:id" element={<PropertyDetail />} />
+          <Route path="/rent-ledger" element={<RentLedger />} />
         </Routes>
       </div>
       {!isDetail && <BottomNav />}

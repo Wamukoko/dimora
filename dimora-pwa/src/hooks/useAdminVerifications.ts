@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { VERIFICATION_KINDS, type VerificationKind } from '@/lib/verification'
+import { VERIFICATION_KINDS, geoEvidenceMismatch, type GeoMismatch, type VerificationKind } from '@/lib/verification'
 
 export interface PendingVerification {
   id: string
@@ -12,6 +12,7 @@ export interface PendingVerification {
   hash: string | null
   propertyTitle: string
   agentName: string | null
+  geoMismatch: GeoMismatch | null
 }
 
 const DEMO_PENDING: PendingVerification[] = [
@@ -25,7 +26,8 @@ const DEMO_PENDING: PendingVerification[] = [
     longitude: 36.7818,
     hash: '9f2c1a4e77b03d5c8a11',
     propertyTitle: 'Sunlit 2-Bedroom in Kilimani',
-    agentName: 'Amina Wanjiru'
+    agentName: 'Amina Wanjiru',
+    geoMismatch: geoEvidenceMismatch(-1.2895, 36.765, -1.2921, 36.7818)
   },
   {
     id: 'demo-pv-2',
@@ -37,7 +39,8 @@ const DEMO_PENDING: PendingVerification[] = [
     longitude: null,
     hash: '4b81de90cc25f7a2e634',
     propertyTitle: 'Modern 4-Bed Villa, Milimani Kisumu',
-    agentName: 'Amina Wanjiru'
+    agentName: 'Amina Wanjiru',
+    geoMismatch: null
   },
   {
     id: 'demo-pv-3',
@@ -49,7 +52,8 @@ const DEMO_PENDING: PendingVerification[] = [
     longitude: 36.803,
     hash: 'c07aa13b58d9e2104fa9',
     propertyTitle: 'Cozy 1-Bed in Kileleshwa',
-    agentName: 'Amina Wanjiru'
+    agentName: 'Amina Wanjiru',
+    geoMismatch: null
   }
 ]
 
@@ -81,7 +85,7 @@ export function useAdminVerifications(): UseAdminVerificationsResult {
         .from('property_verifications')
         .select(
           `id,kind,evidence_url,evidence_captured_at,evidence_latitude,evidence_longitude,evidence_hash,
-           properties(title, profiles(full_name))`
+           properties(title, latitude, longitude, profiles(full_name))`
         )
         .is('verified_by', null)
         .order('created_at', { ascending: true })
@@ -89,21 +93,30 @@ export function useAdminVerifications(): UseAdminVerificationsResult {
       if (cancelled) return
       if (err) setError(err.message)
       setRows(
-        (data ?? []).map((row) => ({
-          id: row.id,
-          kind: row.kind as VerificationKind,
-          evidenceUrl: row.evidence_url,
-          capturedAt: row.evidence_captured_at,
-          latitude: row.evidence_latitude,
-          longitude: row.evidence_longitude,
-          hash: row.evidence_hash ? String(row.evidence_hash).slice(0, 20) : null,
-          propertyTitle:
-            (row.properties as { title?: string } | null)?.title ?? 'Unknown property',
-          agentName:
-            (
-              row.properties as { profiles?: { full_name?: string } | null } | null
-            )?.profiles?.full_name ?? null
-        }))
+        (data ?? []).map((row) => {
+          const property = row.properties as { title?: string; latitude?: number | null; longitude?: number | null; profiles?: { full_name?: string | null } | null } | null
+          const geoMismatch =
+            row.kind === 'site_visit'
+              ? geoEvidenceMismatch(
+                  property?.latitude ?? null,
+                  property?.longitude ?? null,
+                  row.evidence_latitude,
+                  row.evidence_longitude
+                )
+              : null
+          return {
+            id: row.id,
+            kind: row.kind as VerificationKind,
+            evidenceUrl: row.evidence_url,
+            capturedAt: row.evidence_captured_at,
+            latitude: row.evidence_latitude,
+            longitude: row.evidence_longitude,
+            hash: row.evidence_hash ? String(row.evidence_hash).slice(0, 20) : null,
+            propertyTitle: property?.title ?? 'Unknown property',
+            agentName: property?.profiles?.full_name ?? null,
+            geoMismatch
+          }
+        })
       )
       setLoading(false)
     }

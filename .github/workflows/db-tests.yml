@@ -1,0 +1,38 @@
+name: DB tests (RLS regression suite)
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  rls:
+    name: supabase-local RLS regression
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dimora-pwa
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: dimora-pwa/package-lock.json
+
+      - name: Install deps (pg client for the runner)
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase and apply migrations
+        run: supabase start
+
+      - name: Reset DB to a pristine, migration-only state
+        run: supabase db reset
+
+      - name: Run RLS regression suite
+        run: node scripts/run-rls-tests.mjs

@@ -16,7 +16,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid #a85a38;
+    outline: 2px solid theme(colors.terracotta.DEFAULT);
     outline-offset: 2px;
   }
 }

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { canReleaseEscrow } from "../_shared/payments.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -37,6 +38,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Not authorized to confirm this viewing" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // State-machine guard: only a 'held' escrow may be released. A double
+    // release (already 'released_to_agent' or 'refunded_to_hunter') is a 409,
+    // and a disputed escrow must never be released automatically.
+    const { data: payment } = await supabase
+      .from("payments")
+      .select("escrow_status")
+      .eq("booking_id", bookingId)
+      .eq("purpose", "viewing_deposit")
+      .maybeSingle();
+
+    if (payment && !canReleaseEscrow(payment.escrow_status)) {
+      return new Response(
+        JSON.stringify({ error: "Deposit is no longer in a releasable state" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     await supabase.from("bookings").update({ hunter_confirmed_viewing: true }).eq("id", bookingId);

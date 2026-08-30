@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { canRefundEscrow } from "../_shared/payments.ts";
 
 // Mirrors release-escrow: hunter-authenticated, idempotent via escrow_status='held'.
 // Ledger transition only — actual money movement (Daraja B2C reversal / manual M-PESA
@@ -40,6 +41,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Not authorized to refund this deposit" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // State-machine guard: only a 'held' escrow may be refunded. Double
+    // refunds and disputed escrows are rejected outright.
+    const { data: payment } = await supabase
+      .from("payments")
+      .select("escrow_status")
+      .eq("booking_id", bookingId)
+      .eq("purpose", "viewing_deposit")
+      .maybeSingle();
+
+    if (payment && !canRefundEscrow(payment.escrow_status)) {
+      return new Response(
+        JSON.stringify({ error: "Deposit is no longer in a refundable state" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const { data: refunded, error: refundError } = await supabase

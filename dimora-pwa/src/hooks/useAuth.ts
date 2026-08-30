@@ -90,7 +90,9 @@ export function useAuth() {
     const demoProfile: Profile =
       role === 'agent'
         ? { id: 'demo-agent', email: 'amina@demo.dimora', full_name: 'Amina Wanjiru', phone_number: '+254 700 111 222', role: 'agent', avatar_url: null }
-        : { id: 'demo-hunter', email: 'brian@demo.dimora', full_name: 'Brian Otieno', phone_number: '+254 700 333 444', role: 'hunter', avatar_url: null }
+        : role === 'admin'
+          ? { id: 'demo-admin', email: 'admin@demo.dimora', full_name: 'Dimora Admin', phone_number: null, role: 'admin', avatar_url: null }
+          : { id: 'demo-hunter', email: 'brian@demo.dimora', full_name: 'Brian Otieno', phone_number: '+254 700 333 444', role: 'hunter', avatar_url: null }
     localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(demoProfile))
     setDemoProfile(demoProfile)
   }

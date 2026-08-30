@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAgentDashboard } from '@/hooks/useAgentDashboard'
 import { NewListingModal } from '@/components/agent/NewListingModal'
+import { AddLeadModal } from '@/components/agent/AddLeadModal'
 
 const STAGES = [
   { key: 'new_lead', label: 'New lead' },
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const { profile } = useAuth()
   const { loading, data, addListing, addLead } = useAgentDashboard()
   const [showNewListing, setShowNewListing] = useState(false)
+  const [leadStage, setLeadStage] = useState<string | null>(null)
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const hour = new Date().getHours()
@@ -103,7 +105,16 @@ export default function Dashboard() {
       </section>
 
       <section className="mt-8" aria-label="Lead pipeline">
-        <h2 className="font-display text-xl font-semibold text-white">Leads</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl font-semibold text-white">Leads</h2>
+          <button
+            type="button"
+            onClick={() => setLeadStage('new_lead')}
+            className="rounded-xl border border-white/20 px-3.5 py-1.5 text-xs font-semibold text-white/80 transition-colors hover:border-terracotta hover:text-white"
+          >
+            + Add lead
+          </button>
+        </div>
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           {STAGES.map((stage) => {
             const stageItems = data.items.filter((item) => item.stage === stage.key)
@@ -134,6 +145,9 @@ export default function Dashboard() {
                         <p className="truncate text-xs text-white/50">
                           {item.leadName ? item.title : item.leadPhone ?? item.leadSource}
                         </p>
+                        {item.email && (
+                          <p className="truncate text-[11px] text-white/40">{item.email}</p>
+                        )}
                         {item.dueDate && (
                           <p className="mt-1.5 inline-block rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/70">
                             {formatShortDate(item.dueDate)}
@@ -143,12 +157,7 @@ export default function Dashboard() {
                     ))}
                   <button
                     type="button"
-                    onClick={() => {
-                      const name = window.prompt('Lead name')
-                      if (!name?.trim()) return
-                      const phone = window.prompt('Phone number (optional)') ?? ''
-                      void addLead(profile?.id ?? 'demo-agent', name.trim(), phone.trim())
-                    }}
+                    onClick={() => setLeadStage(stage.key)}
                     className="w-full rounded-xl border border-dashed border-white/20 px-3 py-2 text-xs font-medium text-white/50 transition-colors hover:border-terracotta hover:text-white"
                   >
                     + Add lead
@@ -199,6 +208,13 @@ export default function Dashboard() {
         open={showNewListing}
         onClose={() => setShowNewListing(false)}
         onSubmit={(input, files) => addListing(profile?.id ?? 'demo-agent', input, files)}
+      />
+
+      <AddLeadModal
+        open={leadStage !== null}
+        initialStage={leadStage ?? 'new_lead'}
+        onClose={() => setLeadStage(null)}
+        onSubmit={(input, force) => addLead(profile?.id ?? 'demo-agent', input, force)}
       />
     </main>
   )

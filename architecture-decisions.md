@@ -9,11 +9,9 @@ Statuses: **Decided** (locked by spec/audit) · **Pending** (open, owner + due p
 - **ADR-002a Offline stack = idb + IndexedDB + real Background Sync API** — spec §5 mandates real BS over window-event-only; iOS fallback documented.
 - **ADR-003a Search baseline = Postgres pg_trgm + FTS + structured filters** — no external search service under ~100k listings (spec §9.2).
 - **ADR-004a Security posture** — server-authoritative amounts, callback shared secret, JWT-gated functions, role immutability triggers. Non-negotiable (spec §6.1, audit pass).
+- **ADR-005 Escrow payout: manual settlement batch** *(owner: product-manager + security-engineer)* — decided for MVP. Automated Daraja B2C per release was the alternative; rejected for MVP due to B2C limits and integration risk. Ledger stays identical under either option: escrow rows reach `released_to_agent` only from `held`, and money actually moves via ops SOP (daily batch + reconciliation). Decision gates production launch only; revisit before Phase-5 scale-out.
 
 ## Pending
-
-- **ADR-005 Escrow payout mechanism** *(owner: product-manager + security-engineer; due: Phase 2)*
-  Options: (a) automated Daraja B2C per release — instant agent experience, higher integration risk, B2C limits apply; (b) manual settlement batch (recommended for MVP) — ledger states identical, money movement via ops SOP with daily reconciliation. Ledger design supports either; decision gates production launch only.
 
 - **ADR-006 Commute-time provider** *(owner: product-manager; due: Phase 5 start)*
   Mapbox vs OpenRouteService vs Google Routes. Decide on KES/query at expected volume; mitigate via cached neighborhood-pair matrix regardless of choice.

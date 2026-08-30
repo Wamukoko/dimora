@@ -111,6 +111,16 @@ export default function Login() {
               Open agent CRM
             </Button>
           </div>
+          <Button
+            variant="secondary"
+            className="mt-2 w-full"
+            onClick={() => {
+              signInAsDemo('admin')
+              navigate('/admin')
+            }}
+          >
+            Open admin consoles
+          </Button>
         </div>
       </div>
     </main>
