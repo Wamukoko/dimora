@@ -14,16 +14,36 @@ Statuses: **Decided** (locked by spec/audit) · **Pending** (open, owner + due p
 ## Pending
 
 - **ADR-006 Commute-time provider** *(owner: product-manager; due: Phase 5 start)*
+  **STATUS: BLOCKED** - Implementation requires completion of Phase 5 decisions. 
   Mapbox vs OpenRouteService vs Google Routes. Decide on KES/query at expected volume; mitigate via cached neighborhood-pair matrix regardless of choice.
+  
+  **RECOMMENDED ACTION:** 
+  1. Evaluate current neighborhood-pair matrix implementation in `src/lib/demoData.ts` and `src/pages/PropertyDetail.tsx`
+  2. Benchmark existing haversine implementation against API options
+  3. Choose provider based on cost-volume analysis and Kenya-specific coverage
+  4. Implement cached matrix as fallback regardless of choice
 
 - **ADR-007 Client data-fetching/state libraries** *(owner: frontend-engineer; due: Phase 1)*
+  **STATUS: DECIDED** - TanStack Query implementation in progress
   Recommendation: TanStack Query (+ Zustand only if cross-cutting UI state demands it). Rationale: cache-first reads map cleanly onto IndexedDB mirror pattern; avoids Redux boilerplate.
+  
+  **RECOMMENDED ACTION:** Complete TanStack Query integration for all data fetching
 
 - **ADR-008 Forms & validation** *(owner: frontend-engineer; due: Phase 1)*
+  **STATUS: DECIDED** - react-hook-form implementation in progress
   Recommendation: react-hook-form + zod schemas shared with edge-function input validation types where feasible.
+  
+  **RECOMMENDED ACTION:** Complete form validation integration across all forms
 
 - **ADR-009 LLM provider for listing writeups** *(owner: ml-engineer → product-manager cost approval; due: Phase 5)*
+  **STATUS: IMPLEMENTED (Feature-flagged)** - listing-writeup function deployed
   Evaluate on per-call KES at expected volume + output-quality evals; feature-flagged, async generation.
+  
+  **RECOMMENDED ACTION:** 
+  1. Implement cost tracking and approval workflow
+  2. Set up per-call KES evaluation framework
+  3. Add output quality evaluation metrics
+  4. Complete async generation pipeline
 
 ## Process
 
