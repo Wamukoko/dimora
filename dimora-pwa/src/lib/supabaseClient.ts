@@ -16,4 +16,4 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
   : null
 
 export const NOT_CONFIGURED_MESSAGE =
-  'Demo mode — connect a Supabase project (.env.local) to enable this.'
+  'Connect a Supabase project (.env.local) to enable this.'

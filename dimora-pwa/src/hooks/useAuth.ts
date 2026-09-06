@@ -20,17 +20,6 @@ interface AuthState {
   loading: boolean
 }
 
-const DEMO_SESSION_KEY = 'dimora-demo-profile'
-
-function loadDemoProfile(): Profile | null {
-  try {
-    const raw = localStorage.getItem(DEMO_SESSION_KEY)
-    return raw ? (JSON.parse(raw) as Profile) : null
-  } catch {
-    return null
-  }
-}
-
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     session: null,
@@ -38,7 +27,13 @@ export function useAuth() {
     profile: null,
     loading: Boolean(supabase)
   })
-  const [demoProfile, setDemoProfile] = useState<Profile | null>(loadDemoProfile)
+
+  const [demoProfile, setDemoProfileState] = useState<Profile | null>(null)
+
+  function setDemoProfile(profile: Profile | null) {
+    setState((s) => ({ ...s, profile }))
+    setDemoProfileState(profile)
+  }
 
   useEffect(() => {
     if (!supabase) return
@@ -104,6 +99,11 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
+  async function clearDemoAccounts() {
+    localStorage.removeItem(DEMO_SESSION_KEY)
+    setDemoProfile(null)
+  }
+
   const profile = state.profile ?? demoProfile
   const isAuthed = Boolean(state.session) || Boolean(demoProfile)
 
@@ -116,6 +116,7 @@ export function useAuth() {
     signInWithMagicLink,
     signInWithGoogle,
     signInAsDemo,
-    signOut
+    signOut,
+    clearDemoAccounts
   }
 }
